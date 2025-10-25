@@ -1,4 +1,4 @@
-import { Zap, Shield, CheckCircle, Instagram, MapPin, Lock, Mail, Send } from 'lucide-react';
+import { Zap, Shield, CheckCircle, Instagram, MapPin, Lock, Mail } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
@@ -19,8 +19,6 @@ export function Home() {
   const { isAdmin, user, userName, logout } = useAuth();
   const navigate = useNavigate();
   const [showAllProducts, setShowAllProducts] = useState(false);
-  const [emailForm, setEmailForm] = useState({ name: '', email: '', message: '' });
-  const [sendingEmail, setSendingEmail] = useState(false);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const displayedProducts = showAllProducts ? products : products.slice(0, 3);
@@ -55,7 +53,6 @@ export function Home() {
   const productsAnimation = useScrollAnimation();
   const servicesAnimation = useScrollAnimation();
   const materialsAnimation = useScrollAnimation();
-  const emailAnimation = useScrollAnimation();
   const contactAnimation = useScrollAnimation();
 
   const iconMap: Record<string, any> = {
@@ -279,88 +276,6 @@ export function Home() {
         </div>
       </section>
 
-      <section ref={emailAnimation.ref} id="email" className="bg-white py-20">
-        <div className={`container mx-auto px-6 max-w-2xl transition-all duration-700 ${emailAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="text-center mb-8">
-            <Mail className="w-16 h-16 text-[#3d4f5c] mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-[#3d4f5c] mb-3">Send Us a Message</h2>
-            <p className="text-gray-600">Have a question or want to discuss your project? We'd love to hear from you!</p>
-          </div>
-
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!user?.email) {
-                alert('Please log in to send a message');
-                navigate('/admin/login');
-                return;
-              }
-
-              setSendingEmail(true);
-              try {
-                alert(`Message sent successfully! Admin will receive your message at ${user.email}`);
-                setEmailForm({ name: '', email: '', message: '' });
-              } catch (error) {
-                console.error('Error sending email:', error);
-                alert('Failed to send message. Please try again.');
-              } finally {
-                setSendingEmail(false);
-              }
-            }}
-            className="bg-white rounded-xl shadow-lg p-8 space-y-6"
-          >
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
-              <input
-                type="text"
-                value={emailForm.name}
-                onChange={(e) => setEmailForm({ ...emailForm, name: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d4f5c] focus:border-transparent transition"
-                required
-                placeholder="John Doe"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Your Email</label>
-              <input
-                type="email"
-                value={emailForm.email}
-                onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d4f5c] focus:border-transparent transition"
-                required
-                placeholder="john@example.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
-              <textarea
-                value={emailForm.message}
-                onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d4f5c] focus:border-transparent transition"
-                rows={6}
-                required
-                placeholder="Tell us about your project or inquiry..."
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={sendingEmail}
-              className="w-full bg-[#3d4f5c] text-white px-8 py-4 rounded-lg hover:bg-[#2d3f4c] transition font-semibold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {sendingEmail ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-              {sendingEmail ? 'Sending...' : 'Send Message'}
-            </button>
-          </form>
-        </div>
-      </section>
-
       <section ref={contactAnimation.ref} id="contact" className="bg-[#3d4f5c] text-white py-20">
         <div className={`container mx-auto px-6 text-center transition-all duration-700 ${contactAnimation.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="text-3xl font-bold mb-6">Ready to Start Your Project?</h2>
@@ -373,6 +288,10 @@ export function Home() {
             </a>
             <a href="tel:+2250150191162" className="bg-white text-[#3d4f5c] px-8 py-3 rounded hover:bg-gray-100 transition font-medium">
               +225 01 50 19 11 62
+            </a>
+            <a href="mailto:atsa0009@gmail.com" className="bg-white text-[#3d4f5c] px-8 py-3 rounded hover:bg-gray-100 transition font-medium flex items-center gap-2 justify-center">
+              <Mail className="w-5 h-5" />
+              atsa0009@gmail.com
             </a>
           </div>
 
