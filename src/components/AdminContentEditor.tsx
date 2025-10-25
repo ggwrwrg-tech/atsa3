@@ -1,11 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { doc, setDoc, updateDoc, deleteDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useServices } from '../hooks/useServices';
 import { useMaterials } from '../hooks/useMaterials';
 import { useHeroContent } from '../hooks/useHeroContent';
 import { uploadToPostimages } from '../services/postimagesUpload';
-import { Edit2, Trash2, Plus, Save, X, Zap, Shield, CheckCircle, Upload, Image as ImageIcon } from 'lucide-react';
+import { Edit2, Trash2, Plus, Save, X, Zap, Shield, CheckCircle, Upload } from 'lucide-react';
 
 export function AdminContentEditor() {
   const { services, loading: servicesLoading } = useServices();
@@ -26,8 +26,8 @@ export function AdminContentEditor() {
     orderIndex: 0
   });
 
-  const iconFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [iconUrlInput, setIconUrlInput] = useState('');
 
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
@@ -112,44 +112,43 @@ export function AdminContentEditor() {
     { value: 'CheckCircle', label: 'Check Circle', icon: CheckCircle }
   ];
 
-  const handleIconPhotoUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
+  const handleIconUrlSubmit = async () => {
+    if (!iconUrlInput.trim()) {
+      alert('Please enter an image URL');
       return;
     }
 
     setUploadingIcon(true);
     try {
-      const directLink = await uploadToPostimages(file);
+      const removeBgApiKey = '1LtUu5LuVD8J5rweD8wpYVsq';
+      const formData = new FormData();
+      formData.append('image_url', iconUrlInput);
+      formData.append('size', 'auto');
 
-      const removeBgApiKey = import.meta.env.VITE_REMOVE_BG_API_KEY;
-      if (removeBgApiKey) {
-        const formData = new FormData();
-        formData.append('image_url', directLink);
-        formData.append('size', 'auto');
+      const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': removeBgApiKey,
+        },
+        body: formData
+      });
 
-        const response = await fetch('https://api.remove.bg/v1.0/removebg', {
-          method: 'POST',
-          headers: {
-            'X-Api-Key': removeBgApiKey,
-          },
-          body: formData
-        });
-
-        if (response.ok) {
-          const blob = await response.blob();
-          const noBgFile = new File([blob], 'icon-no-bg.png', { type: 'image/png' });
-          const noBgLink = await uploadToPostimages(noBgFile);
-          setServiceForm({ ...serviceForm, iconPhotoUrl: noBgLink });
-        } else {
-          setServiceForm({ ...serviceForm, iconPhotoUrl: directLink });
-        }
+      if (response.ok) {
+        const blob = await response.blob();
+        const noBgFile = new File([blob], 'icon-no-bg.png', { type: 'image/png' });
+        const noBgLink = await uploadToPostimages(noBgFile);
+        setServiceForm({ ...serviceForm, iconPhotoUrl: noBgLink });
+        setIconUrlInput('');
       } else {
-        setServiceForm({ ...serviceForm, iconPhotoUrl: directLink });
+        const errorData = await response.json();
+        console.error('Remove.bg error:', errorData);
+        alert('Failed to remove background. Using original image.');
+        setServiceForm({ ...serviceForm, iconPhotoUrl: iconUrlInput });
+        setIconUrlInput('');
       }
     } catch (error) {
-      console.error('Error uploading icon:', error);
-      alert('Failed to upload icon');
+      console.error('Error processing icon:', error);
+      alert('Failed to process icon. Please try again.');
     } finally {
       setUploadingIcon(false);
     }
@@ -411,53 +410,53 @@ export function AdminContentEditor() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Custom Icon Photo (Optional)</label>
-                <input
-                  ref={iconFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      handleIconPhotoUpload(e.target.files[0]);
-                    }
-                  }}
-                  className="hidden"
-                />
                 {serviceForm.iconPhotoUrl ? (
                   <div className="space-y-2">
-                    <img src={serviceForm.iconPhotoUrl} alt="Icon" className="h-20 w-20 object-contain border border-gray-200 rounded-lg" />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => iconFileInputRef.current?.click()}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
-                      >
-                        Change Icon
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setServiceForm({ ...serviceForm, iconPhotoUrl: '' })}
-                        className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    <img src={serviceForm.iconPhotoUrl} alt="Icon" className="h-20 w-20 object-contain border border-gray-200 rounded-lg bg-gray-50" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setServiceForm({ ...serviceForm, iconPhotoUrl: '' });
+                        setIconUrlInput('');
+                      }}
+                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
+                    >
+                      Remove Icon
+                    </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => iconFileInputRef.current?.click()}
-                    disabled={uploadingIcon}
-                    className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#3d4f5c] transition text-gray-600 hover:text-[#3d4f5c]"
-                  >
-                    {uploadingIcon ? (
-                      <div className="w-4 h-4 border-2 border-[#3d4f5c] border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <ImageIcon className="w-5 h-5" />
-                    )}
-                    {uploadingIcon ? 'Uploading...' : 'Upload Custom Icon'}
-                  </button>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={iconUrlInput}
+                        onChange={(e) => setIconUrlInput(e.target.value)}
+                        placeholder="Enter image URL"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d4f5c] focus:border-transparent"
+                        disabled={uploadingIcon}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleIconUrlSubmit}
+                        disabled={uploadingIcon || !iconUrlInput.trim()}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#3d4f5c] text-white rounded-lg hover:bg-[#2d3f4c] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingIcon ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            Add
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500">Background will be automatically removed using remove.bg</p>
+                  </div>
                 )}
-                <p className="text-xs text-gray-500 mt-1">Background will be automatically removed if API key is configured</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
