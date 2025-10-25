@@ -5,7 +5,7 @@ import { useServices } from '../hooks/useServices';
 import { useMaterials } from '../hooks/useMaterials';
 import { useHeroContent } from '../hooks/useHeroContent';
 import { uploadToPostimages } from '../services/postimagesUpload';
-import { Edit2, Trash2, Plus, Save, X, Zap, Shield, CheckCircle, Upload } from 'lucide-react';
+import { Edit2, Trash2, Plus, Save, X } from 'lucide-react';
 
 export function AdminContentEditor() {
   const { services, loading: servicesLoading } = useServices();
@@ -21,13 +21,8 @@ export function AdminContentEditor() {
     title: '',
     description: '',
     imageUrl: '',
-    icon: 'CheckCircle',
-    iconPhotoUrl: '',
     orderIndex: 0
   });
-
-  const [uploadingIcon, setUploadingIcon] = useState(false);
-  const [iconUrlInput, setIconUrlInput] = useState('');
 
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
@@ -60,7 +55,7 @@ export function AdminContentEditor() {
       }
       setShowServiceModal(false);
       setEditingService(null);
-      setServiceForm({ title: '', description: '', imageUrl: '', icon: 'CheckCircle', iconPhotoUrl: '', orderIndex: 0 });
+      setServiceForm({ title: '', description: '', imageUrl: '', orderIndex: 0 });
     } catch (error) {
       console.error('Error saving service:', error);
       alert('Failed to save service');
@@ -106,53 +101,6 @@ export function AdminContentEditor() {
     }
   };
 
-  const iconOptions = [
-    { value: 'Zap', label: 'Zap', icon: Zap },
-    { value: 'Shield', label: 'Shield', icon: Shield },
-    { value: 'CheckCircle', label: 'Check Circle', icon: CheckCircle }
-  ];
-
-  const handleIconUrlSubmit = async () => {
-    if (!iconUrlInput.trim()) {
-      alert('Please enter an image URL');
-      return;
-    }
-
-    setUploadingIcon(true);
-    try {
-      const removeBgApiKey = '1LtUu5LuVD8J5rweD8wpYVsq';
-      const formData = new FormData();
-      formData.append('image_url', iconUrlInput);
-      formData.append('size', 'auto');
-
-      const response = await fetch('https://api.remove.bg/v1.0/removebg', {
-        method: 'POST',
-        headers: {
-          'X-Api-Key': removeBgApiKey,
-        },
-        body: formData
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const noBgFile = new File([blob], 'icon-no-bg.png', { type: 'image/png' });
-        const noBgLink = await uploadToPostimages(noBgFile);
-        setServiceForm({ ...serviceForm, iconPhotoUrl: noBgLink });
-        setIconUrlInput('');
-      } else {
-        const errorData = await response.json();
-        console.error('Remove.bg error:', errorData);
-        alert('Failed to remove background. Using original image.');
-        setServiceForm({ ...serviceForm, iconPhotoUrl: iconUrlInput });
-        setIconUrlInput('');
-      }
-    } catch (error) {
-      console.error('Error processing icon:', error);
-      alert('Failed to process icon. Please try again.');
-    } finally {
-      setUploadingIcon(false);
-    }
-  };
 
   return (
     <div className="space-y-12">
@@ -247,7 +195,7 @@ export function AdminContentEditor() {
           <button
             onClick={() => {
               setEditingService(null);
-              setServiceForm({ title: '', description: '', imageUrl: '', icon: 'CheckCircle', iconPhotoUrl: '', orderIndex: services.length + 1 });
+              setServiceForm({ title: '', description: '', imageUrl: '', orderIndex: services.length + 1 });
               setShowServiceModal(true);
             }}
             className="flex items-center gap-2 bg-[#3d4f5c] text-white px-4 py-2 rounded-lg hover:bg-[#2d3f4c] transition"
@@ -269,7 +217,7 @@ export function AdminContentEditor() {
                 <div className="flex-1">
                   <h3 className="font-bold text-lg text-[#3d4f5c]">{service.title}</h3>
                   <p className="text-gray-600 text-sm">{service.description}</p>
-                  <p className="text-xs text-gray-400 mt-1">Icon: {service.icon} | Order: {service.orderIndex}</p>
+                  <p className="text-xs text-gray-400 mt-1">Order: {service.orderIndex}</p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -279,8 +227,6 @@ export function AdminContentEditor() {
                         title: service.title,
                         description: service.description,
                         imageUrl: service.imageUrl,
-                        icon: service.icon,
-                        iconPhotoUrl: service.iconPhotoUrl || '',
                         orderIndex: service.orderIndex
                       });
                       setShowServiceModal(true);
@@ -395,70 +341,6 @@ export function AdminContentEditor() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Icon Type</label>
-                <select
-                  value={serviceForm.icon}
-                  onChange={(e) => setServiceForm({ ...serviceForm, icon: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d4f5c] focus:border-transparent"
-                >
-                  {iconOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Custom Icon Photo (Optional)</label>
-                {serviceForm.iconPhotoUrl ? (
-                  <div className="space-y-2">
-                    <img src={serviceForm.iconPhotoUrl} alt="Icon" className="h-20 w-20 object-contain border border-gray-200 rounded-lg bg-gray-50" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setServiceForm({ ...serviceForm, iconPhotoUrl: '' });
-                        setIconUrlInput('');
-                      }}
-                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
-                    >
-                      Remove Icon
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={iconUrlInput}
-                        onChange={(e) => setIconUrlInput(e.target.value)}
-                        placeholder="Enter image URL"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d4f5c] focus:border-transparent"
-                        disabled={uploadingIcon}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleIconUrlSubmit}
-                        disabled={uploadingIcon || !iconUrlInput.trim()}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#3d4f5c] text-white rounded-lg hover:bg-[#2d3f4c] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {uploadingIcon ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-4 h-4" />
-                            Add
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">Background will be automatically removed using remove.bg</p>
-                  </div>
-                )}
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
                 <input
                   type="number"
@@ -480,7 +362,7 @@ export function AdminContentEditor() {
                   onClick={() => {
                     setShowServiceModal(false);
                     setEditingService(null);
-                    setServiceForm({ title: '', description: '', imageUrl: '', icon: 'CheckCircle', iconPhotoUrl: '', orderIndex: 0 });
+                    setServiceForm({ title: '', description: '', imageUrl: '', orderIndex: 0 });
                   }}
                   className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
                 >
